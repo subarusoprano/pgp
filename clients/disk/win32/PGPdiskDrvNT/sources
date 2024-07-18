@@ -1,0 +1,120 @@
+# SOURCES
+
+MAKEDIR=.
+TARGETNAME=PGPdisk
+#TARGETPATH=.
+TARGETTYPE=DRIVER
+#TARGETLIBS=$(DRIVERWORKS)\lib\*\$(pgpddk)\$(DDKBUILDENV)\vdw.lib
+BROWSER_INFO=FALSE
+RCNOFONTMAP=1
+#SUBSYSTEM_VERSION=4.00
+#NTDEBUGTYPE=
+#NTDEBUG=
+#APPVER=4.0
+#WIN32_WINNT_VERSION=0x0400
+
+!UNDEF PGPDISK_95DRIVER
+
+# Put Win2K DDK specific defines in this section.
+!IF "$(LATEST_WIN32_WINNT_VERSION)" == "0x0501"
+!MESSAGE $(o) "WINDOWS XP "
+TARGETLIBS=$(DRIVERWORKS)\lib\*\xp2k\$(DDKBUILDENV)\vdw.lib
+TARGETPATH=.\WINXP
+# Put NT4/Win98 DDK specific defines in this section.
+!ELSEIF "$(LATEST_WIN32_WINNT_VERSION)" == "0x0500"
+!MESSAGE $(o) "*****************WINDOWS 2000 "
+!MESSAGE $(o) $(TARGETLIBS)
+TARGETLIBS=$(DRIVERWORKS)\lib\*\2k\$(DDKBUILDENV)\vdw.lib
+TARGETPATH=.\WIN2K
+# Put NT4/Win98 DDK specific defines in this section.
+!ELSE
+TARGETLIBS=$(DRIVERWORKS)\lib\*\nt4\$(DDKBUILDENV)\vdw.lib
+TARGETPATH=.
+!MESSAGE $(o) "WINDOWS NT 4.0"
+# Need to create the directory for the output in NT4/Win98
+!  IF exist ($(O))
+!MESSAGE $(o) exits
+#    do nothing; the directory has already been created
+!  ELSE
+!	MESSAGE $(o) creating
+!    IF [mkdir $(O)] > 1
+!      ERROR Failed to create output directory.
+!    ENDIF
+!  ENDIF
+
+!ENDIF
+
+!IF $(FREEBUILD)
+
+LINKER_FLAGS = -ignore:4049
+USER_C_FLAGS = /W3 /WX /Fp"PGPdiskDrvNT.pch" /YX"vdw.h"
+
+C_DEFINES=-DNTVERSION=400 /DUCHAR_MAX=0xFF /DUSHRT_MAX=0xFFFF \
+			/DULONG_MAX=0xFFFFFFFF /DINT_MAX=0xFFFFFFFF /D_CRT_ASSERT=0 \
+			/D_MSC_VER=6000 /DPGP_DEBUG=0 /UDEBUG /DPGPDISK_NTDRIVER /DPGP_INTEL \
+			/DPGP_WIN32 /DPGPDISK_NOSDK
+
+!ELSE
+
+LINKER_FLAGS = -ignore:4049
+USER_C_FLAGS = /W3 /WX /Fp"PGPdiskDrvNT.pch" /YX"vdw.h"
+
+C_DEFINES=-DNTVERSION=400 /DUCHAR_MAX=0xFF /DUCHAR_MAX=0xFF \
+			/DUSHRT_MAX=0xFFFF /DULONG_MAX=0xFFFFFFFF /DINT_MAX=0xFFFFFFFF \
+			/D_CRT_ASSERT=0 /D_MSC_VER=6000 /DDEBUG /DPGP_DEBUG=1 \
+			/DPGPDISK_NTDRIVER /DPGP_INTEL /DPGP_WIN32 \
+			/DUNFINISHED_CODE_ALLOWED /DPGPDISK_NOSDK /UPGPDISK_95DRIVER /D_CRTIMP="" 
+
+!ENDIF
+
+INCLUDES=$(PGPDISKSOURCEPATH)\PGPdiskDrvNT\FakeSource;\
+	$(PGPDISKSOURCEPATH)\PGPdiskDrvNT\FakeSource\sys;\
+	$(DRIVERWORKS)\include;\
+	$(DRIVERWORKS)\source;\
+	$(BASEDIR)\inc;\
+	$(BASEDIR)\inc\ddk;\
+	$(DRIVERWORKS)\include\dep_vxd;\
+	$(DRIVERWORKS)\include\dep_wdm;\
+	$(PGPDISKSOURCEPATH)\PGPdiskDrvNT\Source;\
+	$(PGPDISKSOURCEPATH)\Shared;$(PGPDISKSOURCEPATH)\Encryption;\
+	$(PGPDISKSOURCEPATH)\..\..\..\libs\pfl\common;\
+	$(PGPDISKSOURCEPATH)\..\..\..\libs\pfl\win32
+
+SOURCES=	PGPdisk.rc \
+			pgpDebug.cpp \
+			pgpLeaks.cpp \
+			pgpMem.cpp \
+			CRunTimeExtras.cpp \
+			CPGPdiskDriver.cpp \
+			CPGPdiskInterface.cpp \
+			CPGPdiskInterfaceComm.cpp \
+			CPGPdiskInterfaceErrors.cpp \
+			CPGPdiskInterfaceHooks.cpp \
+			CPGPdiskInterfaceVolumes.cpp \
+			File.cpp \
+			KernelModeUtils.cpp \
+			NtThreadSecurity.cpp \
+			PGPdisk.cpp \
+			PGPdiskRequestQueue.cpp \
+			PGPdiskWorkerThread.cpp \
+			UserMemoryManager.cpp \
+			VolFile.cpp \
+			Volume.cpp \
+			CommonStrings.cpp \
+			DualErr.cpp \
+			Errors.cpp \
+			PGPdiskContainer.cpp \
+			PGPdiskLowLevelUtils.cpp \
+			PGPdiskHighLevelUtils.cpp \
+			PGPdiskPFL.cpp \
+			SecureMemory.cpp \
+			SecureString.cpp \
+			StringAssociation.cpp \
+			WaitObjectClasses.cpp \
+			Cast5.cpp \
+			Cast5Box.cpp \
+			CipherContext.cpp \
+			CipherUtils.cpp \
+			SHA.cpp
+
+NTTARGETFILE0=msglog.h
