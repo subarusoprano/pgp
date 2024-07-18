@@ -1,0 +1,158 @@
+// $Id: setupfolders.rul,v 1.18.4.2.6.1 1999/09/07 18:56:16 philipn Exp $
+//____________________________________________________________________________
+//	Copyright (C) 1999 Network Associates Inc. and affiliated companies.
+//	All rights reserved.
+//	
+//  Author: Philip Nathan
+//____________________________________________________________________________
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Function: SetupFolders
+//
+//  Purpose: This function creates all the folders and shortcuts for the
+//           setup.
+//
+///////////////////////////////////////////////////////////////////////////////
+function SetupFolders()
+    NUMBER nResult;
+	STRING szProgram;
+begin
+    nResult = CreateShellObjects( "" );
+	ProgDefGroupType(COMMON);
+	
+	szProgram = svDir ^ "PGPtray.exe";
+	LongPathToQuote (szProgram,TRUE);
+	szAppPath = svDir;
+	
+	//Startup group
+	AddFolderIcon
+	(FOLDER_STARTUP,"PGPtray",szProgram,szAppPath,"",0,"",REPLACE);
+	
+	CreateProgramFolder ("P G P");
+
+	if (ComponentIsItemSelected
+	(MEDIA,"User's Manual") = TRUE) then
+		szProgram = svDir ^ "Documentation" ^ "PGPWinUsersGuide.pdf";
+		LongPathToQuote (szProgram,TRUE);
+		szAppPath = svDir ^ "Documentation";
+		AddFolderIcon
+		(FOLDER_PROGRAMS ^ "P G P" ^ "Documentation",
+		"PGP User's Guide",szProgram,szAppPath
+		,"",0,"",REPLACE);
+	endif;
+
+	if (bImAdminInstall) then
+		szProgram = svDir ^ "Documentation" ^ "PGPAdministratorsGuide.pdf";
+		LongPathToQuote (szProgram,TRUE);
+		szAppPath = svDir ^ "Documentation";
+		AddFolderIcon
+		(FOLDER_PROGRAMS ^ "P G P" ^ "Documentation",
+		"PGP Administrator's Guide",szProgram,szAppPath
+		,"",0,"",REPLACE);
+		
+		szProgram = svDir ^ "pgpadmin.exe";
+		LongPathToQuote (szProgram,TRUE);
+		szAppPath = svDir;
+		AddFolderIcon
+		(FOLDER_PROGRAMS ^ "P G P",
+		"PGPadmin",szProgram,szAppPath ,"",0,"",REPLACE);
+	endif;
+
+	szProgram = svDir ^ "Documentation" ^ "IntroToCrypto.pdf";
+	LongPathToQuote (szProgram,TRUE);
+	szAppPath = svDir ^ "Documentation";
+	AddFolderIcon
+	(FOLDER_PROGRAMS ^ "P G P" ^ "Documentation",
+	"Intro To Crypto",szProgram,szAppPath
+	,"",0,"",REPLACE);
+
+	szProgram = svDir ^ "Documentation" ^ "WhatsNew.htm";
+	LongPathToQuote (szProgram,TRUE);
+	szAppPath = svDir ^ "Documentation";
+	AddFolderIcon
+	(FOLDER_PROGRAMS ^ "P G P" ^ "Documentation",
+	"What's New (html)",szProgram,szAppPath
+	,"",0,"",REPLACE);
+	
+	if (ComponentIsItemSelected ( MEDIA , "NTCmdline" ) = TRUE) then
+		szProgram = svDir ^ "Documentation" ^ "PGPCmdLineGuide.pdf";
+		LongPathToQuote (szProgram,TRUE);
+		szAppPath = svDir ^ "Documentation";
+		AddFolderIcon
+		(FOLDER_PROGRAMS ^ "P G P" ^ "Documentation",
+		"PGP Command Line Guide",szProgram,szAppPath
+		,"",0,"",REPLACE);	
+	endif;
+	
+	szProgram = svDir ^ "pgpkeys.exe";
+	LongPathToQuote (szProgram,TRUE);
+	szAppPath = svDir;
+	AddFolderIcon
+	(FOLDER_PROGRAMS ^ "P G P",
+	"PGPkeys",szProgram,szAppPath ,"",0,"",REPLACE);
+
+	szProgram = svDir ^ "PGPtray.exe";
+	LongPathToQuote (szProgram,TRUE);
+	szAppPath = svDir;
+	AddFolderIcon
+	(FOLDER_PROGRAMS ^ "P G P",
+	"PGPtray",szProgram,szAppPath,"",0,"",REPLACE);
+	
+	szProgram = svDir ^ "PGPtools.exe";
+	LongPathToQuote (szProgram,TRUE);
+	szAppPath = svDir;
+	AddFolderIcon
+	(FOLDER_PROGRAMS ^ "P G P",
+	"PGPtools",szProgram,szAppPath,"",0,"",REPLACE);
+	
+	if (ComponentIsItemSelected	(MEDIA,"PGPdisk") = TRUE) then
+		szProgram = svDir ^ "PGPdisk.exe";
+		LongPathToQuote (szProgram,TRUE);
+		szAppPath = svDir;
+		AddFolderIcon
+		(FOLDER_PROGRAMS ^ "P G P",
+		"PGPdisk",szProgram,szAppPath,"",0,"",REPLACE);
+	endif;
+	
+	//PGPnet
+	if (ComponentIsItemSelected	(MEDIA,"PGPnet") = TRUE) then
+		//Set start menu items
+		ProgDefGroupType(COMMON);
+
+		szProgram = svDir ^ "PGPnet.exe";
+		LongPathToQuote (szProgram,TRUE);
+		szAppPath = svDir;
+		AddFolderIcon
+		(FOLDER_PROGRAMS ^ "P G P",
+		"PGPnet",szProgram,szAppPath
+		,"",0,"",REPLACE);
+		
+		szProgram = svDir ^ "SetAdapter.exe";
+		LongPathToQuote (szProgram,TRUE);
+		szAppPath = svDir;
+		AddFolderIcon
+		(FOLDER_PROGRAMS ^ "P G P",
+		"Set Adapter",szProgram,szAppPath
+		,"",0,"",REPLACE);
+	endif;
+    return nResult;
+ end;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

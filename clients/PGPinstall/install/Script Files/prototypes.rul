@@ -1,0 +1,103 @@
+// $Id: prototypes.rul,v 1.9.10.5 1999/09/24 22:41:25 philipn Exp $
+//____________________________________________________________________________
+//	Copyright (C) 1999 Network Associates Inc. and affiliated companies.
+//	All rights reserved.
+//	
+//  Author: Philip Nathan
+//____________________________________________________________________________
+
+
+//////////////////// installation declarations ///////////////////
+
+// ----- DLL function prototypes -----
+	prototype BOOL install.MyGetOpenFileName32(HWND, STRING, STRING, STRING, STRING);
+	prototype BOOL install.MyBrowseForFolder32(HWND, STRING);
+	prototype cdecl INT  install.PGPclStartMemLockDriver();
+	prototype cdecl INT install.StopService(STRING);	
+	prototype cdecl BOOL install.IsWin95OSR2Compatible();
+	prototype cdecl void install.RefreshStartMenu();
+	prototype cdecl BOOL install.IsWin2000Compatible();	
+	//prototype LONG version.GetFileVersionInfoSizeA(STRING,BYREF LONG);
+	//prototype BOOL version.GetFileVersionInfoA(STRING,LONG,LONG,BYREF STRING);
+	//prototype BOOL version.VerQueryValueA(BYREF STRING,STRING,BYREF POINTER,BYREF NUMBER);
+	prototype cdecl INT PGPcl.PGPclPreferences(POINTER,HWND,INT, POINTER);
+	prototype cdecl INT PGPcl.PGPclSetUserInfo(STRING,STRING,STRING);
+	prototype cdecl INT PGPcl.PGPclGetSDKFilePaths(STRING, INT, STRING, INT, STRING, INT);
+	prototype cdecl INT PGPcl.PGPclSetSDKFilePaths(STRING, STRING, STRING, INT);
+	prototype stdcall BOOL PGPdskIH.IsVolumeAPGPdisk(INT);
+	prototype stdcall void PGPdskIH.KillPGPdiskResident();
+	prototype stdcall void PGPdskIH.PGPdiskCleanup();
+	prototype stdcall BOOL PGPdskIH.LoadPGPdiskDriver();
+	prototype stdcall BOOL PGPdskIH.AreAnyPGPdisksMounted();
+	prototype stdcall BOOL PGPdskIH.UnmountAllPGPdisks();
+	
+// ---- script function prototypes -----
+    prototype ShowDialogs();
+    prototype MoveFileData();
+    prototype HandleMoveDataError(NUMBER);
+    prototype ProcessBeforeDataMove();
+    prototype ProcessAfterDataMove();
+    prototype SetupRegistry();
+    prototype SetupFolders();
+    prototype CleanUpInstall();
+    prototype SetupInstall();
+    prototype SetupScreen();
+    prototype CheckRequirements();
+    prototype DialogShowSdWelcome();
+    prototype DialogShowSdLicense();
+    prototype DialogShowSdShowReadMe();
+    prototype DialogShowSdShowReadMeckt();
+    prototype DialogShowSdRegisterUserEx();
+    prototype DialogShowSdAskDestPath();
+    prototype DialogShowSdComponentDialog2();
+    prototype DialogShowSdStartCopy();
+    prototype DialogShowSdFinishReboot();
+	prototype FindOutlookExpress();
+	prototype FindGroupwise();
+	prototype FindEudora();
+	prototype FindLotus();
+	prototype FindICQ();
+	prototype FindtheBat();
+	prototype UninstallLotusNotes();
+	prototype UninstallGroupwise();
+	prototype EditNotesIni(STRING);
+	prototype ShutDownApps();
+	prototype DeleteSharedFile(STRING, STRING);
+	prototype Uninstall65();
+	prototype Uninstall6X();
+	prototype Uninstall5X(STRING);
+	prototype FindInstalledVersions();
+	prototype CleanSharedFile(STRING, STRING);
+	prototype SetPrefUserInfo();
+	prototype SetInstallType();
+	prototype FileBrowse(HWND, STRING, BYREF STRING, STRING, STRING);
+	prototype SetKeyRings();
+	prototype FinalInstallProcess();
+	prototype LaunchCtrlUpdater();
+	prototype StartMemLock();
+	prototype AmIaPGPdisk(STRING);
+	prototype CanIinstallPGPnet();
+	prototype SetUninstall();
+	prototype UninstallPGPdisk(STRING);
+	prototype UninstallPGPnet (STRING);
+	prototype CleanHardwareSettings ();
+	prototype SaveOldKeyrings ();
+	prototype UseDFK();
+	prototype SetEnvVar(BOOL, STRING);
+	prototype FindAllPluginApps (); 	
+	prototype myReboot();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,703 @@
+// $Id: plugindirs.rul,v 1.10.10.12 1999/10/01 22:08:48 philipn Exp $
+//____________________________________________________________________________
+//	Copyright (C) 1999 Network Associates Inc. and affiliated companies.
+//	All rights reserved.
+//	
+//  Author: Philip Nathan
+//____________________________________________________________________________
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Function: FindOutlookExpress
+//
+//  Purpose: This function finds where outlook express is installed.
+//           If its not installed, the the plugin does not get installed.
+//
+///////////////////////////////////////////////////////////////////////////////
+function FindOutlookExpress()
+    NUMBER nvType, nvSize, nResult, nHandle, nSize;
+    LONG lSize, lData;
+    STRING szKey, szName, svValue, svResult, szFileName;
+    STRING szVersionInfo1, szVersionInfo2, szData;
+    STRING szResultBuffer;
+    BOOL bFoundOutlook, bVerInfo, bVerValue, bCheckVersion;
+    HWND hwndIS, RenameOriginal;
+    POINTER ptr1,ptr2;
+	
+begin
+	//Get Outlook Express's Install Directory
+	RegDBSetDefaultRoot(HKEY_LOCAL_MACHINE);
+	szKey = "SOFTWARE\\Microsoft\\Outlook Express";
+	szName = "InstallRoot";
+	RegDBGetKeyValueEx (szKey, szName, nvType, svValue, nvSize);
+	szOEdir = svValue;
+	
+	if (FindFile (szOEdir, "msimn.exe", svResult) <0) then
+		bFoundOutlook = FALSE;
+	else
+		//msimn.exe is present
+		bFoundOutlook = TRUE;
+	endif;
+	
+	if (bFoundOutlook = FALSE) then
+		// we must ask the user where Outlook is
+		szOEdir = "";
+		nResult = UseDLL (SUPPORTDIR ^ "INSTALL.DLL");
+		szOEdir = "Setup could not find your Outlook Express Install folder. " +
+		"Please browse to it.";
+		hwndIS = GetWindowHandle(HWND_INSTALL);
+		nResult = MyBrowseForFolder32 (hwndIS, szOEdir);
+		UnUseDLL (SUPPORTDIR ^ "INSTALL.DLL");
+		
+		if (nResult = 0)then
+			//user canceled dialog
+			ComponentSelectItem
+			(MEDIA,"Outlook Exp Plugin",FALSE);
+			return FALSE;
+		endif;
+		
+		if ((ExistsDir (szOEdir) = EXISTS) &&
+	   		FindFile(szOEdir,"msimn.exe",svResult)=0) then
+			bFoundOutlook = TRUE;
+		else
+			//They did not enter a path for Outlook
+			// & it cannot be found so we do not install the plugin.
+			MessageBox( "There does not appear to be a valid install of Microsoft Outlook\n" +
+			"Express in this directory so the plugin won't be installed.", INFORMATION );
+			ComponentSelectItem
+			(MEDIA,"Outlook Exp Plugin",FALSE);
+			return FALSE;
+		endif;
+	endif;
+end;
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Function: FindEudora
+//
+//  Purpose: This function finds where Eudora is installed.
+//           If its not installed, the the plugin does not get installed.
+//
+///////////////////////////////////////////////////////////////////////////////
+function FindEudora()
+	BOOL bFoundEudora;
+	NUMBER nvType, nvPathLen, nResult;
+	STRING RegString, KeyVal, svString;
+	STRING szDelimiterSet, EudoraPluginPath;
+	STRING szEudoraFile, WhichPlugin;
+	STRING PathToExe, svEudoraVersion, szData;
+	LIST listID;
+	HWND hwndIS;
+
+begin
+	// add the eudora plugin to the plugins dir
+	nvType = REGDB_STRING;
+
+	RegDBSetDefaultRoot(HKEY_CURRENT_USER);
+	RegString = "\\Software\\Qualcomm\\Eudora\\CommandLine";
+	KeyVal = "Current";
+
+	if (RegDBGetKeyValueEx
+		(RegString,KeyVal,nvType,szEudoraPath,nvPathLen) < 0) then
+		bFoundEudora = FALSE;
+	else
+		// Set necessary variables.
+		listID         = ListCreate(STRINGLIST);
+    	if (listID = LIST_NULL) then
+    		MessageBox ("Unable to create list.", SEVERE);
+    		abort;
+ 		endif;
+		szDelimiterSet = " ";
+	
+		StrGetTokens(listID, szEudoraPath, szDelimiterSet);
+		ListGetFirstString(listID, svString);
+		ParsePath(szEudoraPath, svString, PATH);
+				
+		if (ExistsDir(szEudoraPath) = NOTEXISTS) then
+			bFoundEudora = FALSE;
+		else
+			bFoundEudora = TRUE;
+		endif;
+
+	endif;
+
+	if (bFoundEudora = FALSE) then
+		// we must ask the user where Eudora is
+		szEudoraPath = "";
+		nResult = UseDLL (SUPPORTDIR ^ "INSTALL.DLL");
+		szEudoraPath = "Setup could not find your Eudora Install folder. " +
+		"Please browse to it.";
+		hwndIS = GetWindowHandle(HWND_INSTALL);
+		nResult = MyBrowseForFolder32 (hwndIS, szEudoraPath);
+		UnUseDLL (SUPPORTDIR ^ "INSTALL.DLL");
+		
+		if (nResult = 0)then
+			//user canceled dialog
+			ComponentSelectItem	(MEDIA, "Eudora Plugin",FALSE);
+			return FALSE;
+		endif;
+			
+		if ((ExistsDir(szEudoraPath)=EXISTS) &&
+			(FindFile(szEudoraPath,"Eudora.exe",szEudoraFile)=0)) then
+			bFoundEudora = TRUE;
+		else
+			//They did not enter a path for Eudora
+			// & it cannot be found
+			//so we do not install the plugin.
+			MessageBox( "There does not appear to be a valid install of Eudora\n" +
+			"in this directory so the plugin won't be installed.", INFORMATION );
+			ComponentSelectItem	(MEDIA, "Eudora Plugin",FALSE);
+		endif;
+	endif;
+	
+	if (bFoundEudora = TRUE) then
+		EudoraPluginPath = szEudoraPath + "\\Plugins";
+		PathToExe = szEudoraPath^"Eudora.exe";
+
+		// check to see if we need to migrate 3.0.1 to 3.0.2
+		ComponentSelectItem( MEDIA, "Eudora Plugin\\lessthan40", TRUE );
+		ComponentSelectItem( MEDIA, "Eudora Plugin\\40ormore", FALSE );
+		
+		if (VerGetFileVersion
+			(szEudoraPath^"Eudora.exe",svEudoraVersion) = 0) then
+				
+			if (ComponentIsItemSelected
+				(MEDIA,"Eudora Plugin") = TRUE) then
+				if (VerCompare
+					(svEudoraVersion,"3.0.2.0",VERSION) = LESS_THAN) then
+					MessageBox
+					("Setup has detected that Eudora needs to be updated.\n" +
+					"The necessary updates can be found at : \n\n"         +
+					"http://www.eudora.com\n\n"   +
+					" Install update overtop of your current" +
+					" version to maintain\nsettings and plugins, otherwise" +
+					" PGP will need to be reinstalled)", INFORMATION);
+				endif;
+		
+				if ((VerCompare
+					(svEudoraVersion,"4.0.0.0",VERSION) = EQUALS) ||
+					(VerCompare
+					(svEudoraVersion,"4.0.0.0",VERSION) = GREATER_THAN)) then
+					ComponentSelectItem( MEDIA, "Eudora Plugin\\lessthan40", FALSE);
+					ComponentSelectItem( MEDIA, "Eudora Plugin\\40ormore", TRUE );
+				endif;
+			endif;
+		endif; // no version info for file
+
+		if (ComponentIsItemSelected(MEDIA, "Eudora Plugin") = TRUE) then
+			EudoraPluginDir = szEudoraPath ^ "Plugins";
+			LongPathFromShortPath(EudoraPluginDir);
+			ComponentSetTarget (MEDIA, "<EudoraPlugins>", EudoraPluginDir);
+		endif;
+	endif;
+end;
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Function: FindLotus
+//
+//  Purpose: This function finds where Lotus Notes is installed.
+//           If its not installed, the the plugin does not get installed.
+//
+///////////////////////////////////////////////////////////////////////////////
+function FindLotus()
+	BOOL bFoundLotus;
+	BOOL bReturn;
+	STRING szLotusPath;
+	STRING RegString;
+	STRING KeyVal;
+	STRING PathToFile;
+	STRING szFileFilter;
+	STRING szDlgTitle;
+	STRING szExt;
+	NUMBER nvType;
+	NUMBER nvPathLen;
+	NUMBER nResult;
+	HWND hwndIS;
+	
+	
+begin
+	bFoundLotus = FALSE;
+	szLotusPath = "";
+	bReturn = TRUE;
+	
+	RegDBSetDefaultRoot(HKEY_LOCAL_MACHINE);
+	RegString = "\\SOFTWARE\\Lotus\\Notes\\4.0";
+	KeyVal = "Path";
+
+	if (RegDBGetKeyValueEx
+		(RegString,KeyVal,nvType,szLotusPath,nvPathLen) = 0) then
+		
+		PathToFile = szLotusPath ^ "nlnotes.exe";
+		
+		if ((ExistsDir(szLotusPath) = EXISTS) &&
+			(Is(FILE_EXISTS,PathToFile) = TRUE)) then
+			bFoundLotus = TRUE;
+			if(bEasyInstall) then
+				goto cleanup;
+			endif;			
+		endif;	
+	endif;	
+	
+	if (bFoundLotus = FALSE) then
+		bReturn = FALSE;
+		goto cleanup;
+	else
+		//get main window handle
+		hwndIS = GetWindowHandle(HWND_INSTALL);
+		//Get new Public ring
+		szFileFilter = "Executable File (nlnotes.exe),nlnotes.exe;,All Files (*.*),*.*";
+	
+		// Give the file browse dialog a custom title,if you wish.
+		// Leave szDlgTitle null ("") to accept the default title ("Open").
+		szDlgTitle = "Browse to \"nlnotes.exe\" in your Lotus Notes Directory.";
+
+		// Pass in a default file extension.  Do NOT include the period.
+		// If you pass a null string,no extension is used.
+		szExt = "exe";
+
+		// Call the FileBrowse function.
+		PathToFile = szLotusPath ^ "nlnotes.exe";
+
+		UseDLL(SUPPORTDIR ^ "Install.dll");
+		nResult = FileBrowse(hwndIS,szFileFilter,PathToFile,szDlgTitle,szExt);
+		UnUseDLL(SUPPORTDIR ^ "Install.dll");
+		if (!nResult) then
+			// extract path from filepath
+			ParsePath (szLotusPath, PathToFile, PATH);
+		else
+			// Handle the lack of selection,which could be due to a dialog
+    		// box-related error,chosing the Cancel button,or closing
+    		// the dialog with the Close button.
+  			bReturn = FALSE;
+			goto cleanup;	
+		endif;
+		
+		PathToFile = szLotusPath ^ "nlnotes.exe";	
+		
+		if ((ExistsDir(szLotusPath) = EXISTS) &&
+			(Is(FILE_EXISTS,PathToFile) = TRUE)) then
+			bFoundLotus = TRUE;
+		else
+			MessageBox( "Cant find nlnotes.exe in\n" + szLotusPath , INFORMATION );
+			bReturn = FALSE;
+			goto cleanup;	
+		endif;
+	endif;
+	
+cleanup:
+	if (bFoundLotus) then
+		if (EditNotesIni(szLotusPath) = FALSE) then
+			//could not find notes.ini
+			MessageBox( "Unable to locate notes.ini", INFORMATION );
+			bReturn = FALSE;
+		endif;
+	endif;
+	if (bReturn) then
+		//write reg. entry to store Lotus install dir.
+		RegDBSetDefaultRoot(HKEY_LOCAL_MACHINE);
+		RegDBSetKeyValueEx("SOFTWARE\\Network Associates\\PGP","LotusPath",
+						REGDB_STRING, szLotusPath,-1);
+	
+		ComponentSetTarget (MEDIA, "<LotusInstallDir>", szLotusPath);
+	else
+		if(! bEasyInstall) then
+			MessageBox( "There does not appear to be a valid install of Lotus\n" +
+					"Notes on this system. Lotus Notes 4.5x or 4.6x must be\n" +
+					"installed before the plugin can be installed.", INFORMATION );
+		endif;
+	
+		ComponentSelectItem(MEDIA,"Lotus Notes",FALSE);
+	endif;
+
+	return bReturn;
+end;
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Function: EditLotusIni
+//
+//  Purpose: This function edits the Lotus Notes "notes.ini"
+//	This is called by FindLotus()
+///////////////////////////////////////////////////////////////////////////////
+function EditNotesIni(szLotusPath)
+	BOOL bFoundIni;
+	STRING PathToIni;
+	STRING szSectionName;
+	STRING svResult;	
+	STRING szReplaceValue;
+		
+	
+begin
+	bFoundIni = FALSE;
+	szSectionName = "Notes";
+
+	PathToIni = szLotusPath ^ "notes.ini";
+	if (Is(FILE_EXISTS,PathToIni) = TRUE) then
+		bFoundIni = TRUE;
+	else
+		PathToIni = WINDIR ^ "notes.ini";
+		if (Is(FILE_EXISTS,PathToIni) = TRUE) then
+			bFoundIni = TRUE;
+		endif;
+	endif;
+	
+	if (bFoundIni) then
+		if (GetProfString (PathToIni, szSectionName, "NSF_HOOKS" , svResult) = 0) then
+			if !(svResult % "nPGPNts.dll") then
+				szReplaceValue = svResult + ",nPGPNts.dll";
+			endif;
+			ReplaceProfString (PathToIni, szSectionName, "NSF_HOOKS", svResult, szReplaceValue);
+		else
+			WriteProfString (PathToIni, szSectionName, "NSF_HOOKS", "nPGPNts.dll");
+		endif;
+		
+		if (GetProfString (PathToIni, szSectionName, "EXTMGR_ADDINS" , svResult) = 0) then
+			if !(svResult % "nPGPext.dll") then
+				szReplaceValue = svResult + ",nPGPext.dll";
+			endif;
+			ReplaceProfString (PathToIni, szSectionName, "EXTMGR_ADDINS", svResult, szReplaceValue);
+		else
+			WriteProfString (PathToIni, szSectionName, "EXTMGR_ADDINS", "nPGPext.dll");
+		endif;
+		
+		if ((bIsWindows98) || (bIsWindows95)) then
+			//flush the cache buffer
+			WriteProfString ("","","","");
+		endif;
+		
+		//write reg. entry to store Lotus ini path.
+		RegDBSetDefaultRoot(HKEY_LOCAL_MACHINE);
+		RegDBSetKeyValueEx("SOFTWARE\\Network Associates\\PGP","LotusIniFilePath",
+						REGDB_STRING, PathToIni,-1);
+	endif;
+
+cleanup:
+	return bFoundIni;
+end;
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Function: FindGroupwise
+//
+//  Purpose: This function finds where groupwise is installed.
+//           If its not installed, the the plugin does not get installed.
+//
+///////////////////////////////////////////////////////////////////////////////
+function FindGroupwise()
+	STRING szKey;
+	STRING szName;
+	STRING svPath;
+	STRING svReturnString;
+	STRING szGWPath;
+	STRING nResult;
+	STRING svVersionNumber;
+	STRING szGWFile;
+	STRING svValue;
+	HWND hwndIS3;
+	NUMBER nvType;
+	NUMBER nvSize;
+
+begin
+	bFoundGroupwise = TRUE;
+
+	RegDBSetDefaultRoot(HKEY_LOCAL_MACHINE);
+	szKey = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\GrpWise.exe";
+	szName = "";
+
+	//find grpwise
+	if (RegDBGetKeyValueEx (szKey, szName, nvType, svValue, nvSize) = 0 ) then
+		VarSave (SRCTARGETDIR);
+		ParsePath (svReturnString, svValue, PATH);
+		TARGETDIR  = svReturnString;
+		if (VerFindFileVersion ("GrpWise.exe", svPath, svVersionNumber)= 0 )then
+			if (VerCompare ("5.0.5.0", svVersionNumber, VERSION) = GREATER_THAN) then
+				bGW55 = FALSE;
+				ComponentSelectItem( MEDIA, "Groupwise\\52", TRUE);
+				ComponentSelectItem( MEDIA, "Groupwise\\55", FALSE);
+			else
+				bGW55 = TRUE;
+				ComponentSelectItem( MEDIA, "Groupwise\\52", FALSE);
+				ComponentSelectItem( MEDIA, "Groupwise\\55", TRUE);				
+			endif;
+			VarRestore (SRCTARGETDIR);
+		else
+			VarRestore (SRCTARGETDIR);
+			goto BrowseForIt;
+		endif;
+	else
+BrowseForIt:
+		MessageBox( "Setup could not find your Groupwise install directory. Please Browse to it.", INFORMATION );
+		UseDLL (SUPPORTDIR ^ "INSTALL.DLL");
+		szGWPath = "Browse to your Groupwise Install folder.";
+		hwndIS3 = GetWindowHandle(HWND_INSTALL);
+		MyBrowseForFolder32 (hwndIS3, szGWPath);
+		UnUseDLL (SUPPORTDIR ^ "INSTALL.DLL");
+		if ((szGWPath != "")&& (Is(FILE_EXISTS, szGWPath ^ "GrpWise.exe") = TRUE)) then
+			if ((ExistsDir(szGWPath)=EXISTS) && (FindFile(szGWPath,"grpwise.exe",szGWFile)=0)) then
+				VarSave (SRCTARGETDIR);
+				TARGETDIR  = szGWPath;
+				VerFindFileVersion ("GrpWise.exe", svPath, svVersionNumber);
+				VarRestore (SRCTARGETDIR);
+				if (VerCompare ("5.0.5.0", svVersionNumber, VERSION) = GREATER_THAN) then
+					bGW55 = FALSE;
+					ComponentSelectItem( MEDIA, "Groupwise\\52", TRUE);
+					ComponentSelectItem( MEDIA, "Groupwise\\55", FALSE);		
+				else
+					bGW55 = TRUE;
+					ComponentSelectItem( MEDIA, "Groupwise\\52", FALSE);
+					ComponentSelectItem( MEDIA, "Groupwise\\55", TRUE);		
+				endif;
+			endif;
+		else
+			bFoundGroupwise = FALSE;
+				//They did not enter a path for Groupwise
+				// & it cannot be found so we do not install the plugin.
+				MessageBox( "There does not appear to be a valid install of Groupwise\n" +
+			"in this directory so the plugin won't be installed.", INFORMATION );
+			ComponentSelectItem (MEDIA,"Groupwise",FALSE);
+			ComponentSelectItem( MEDIA, "Groupwise\\52", FALSE);
+			ComponentSelectItem( MEDIA, "Groupwise\\55", FALSE);		
+		endif;
+	endif;
+end; 
+//BEGIN FIND THE BAT
+function FindtheBat()
+    NUMBER nvType, nvSize, nResult, nHandle, nSize;
+    LONG lSize, lData;
+    STRING szKey, szName, svValue, svResult, szFileName;
+    STRING szVersionInfo1, szVersionInfo2, szData, szTheBatDir;
+    STRING szResultBuffer;
+    BOOL bFoundTheBat,bVerInfo, bVerValue, bCheckVersion;
+    HWND hwndIS, RenameOriginal;
+    POINTER ptr1,ptr2;
+	
+begin
+	//Get the Bat! Install Directory
+	RegDBSetDefaultRoot(HKEY_CURRENT_USER);
+	szKey = "\\Software\\RIT\\The Bat!";
+	szName = "ProgramDir";
+	RegDBGetKeyValueEx (szKey, szName, nvType, svValue, nvSize);
+	szTheBatDir = svValue;
+	
+	if (FindFile (szTheBatDir, "thebat.exe", svResult) <0) then
+		bFoundTheBat = FALSE;
+	else
+		//thebat.exe is present
+		bFoundTheBat = TRUE;
+	endif;
+	
+	if (bFoundTheBat = FALSE) then
+		// we must ask the user where the Bat! is
+		szTheBatDir = "";
+		nResult = UseDLL (SUPPORTDIR ^ "INSTALL.DLL");
+		szTheBatDir = "Setup could not find your the Bat! Install folder. " +
+		"Please browse to it.";
+		hwndIS = GetWindowHandle(HWND_INSTALL);
+		nResult = MyBrowseForFolder32 (hwndIS, szTheBatDir);
+		UnUseDLL (SUPPORTDIR ^ "INSTALL.DLL");
+		
+		if (nResult = 0)then
+			//user canceled dialog
+			ComponentSelectItem
+			(MEDIA,"theBatPlugin",FALSE);
+			return FALSE;
+		endif;
+		
+		if ((ExistsDir (szTheBatDir) = EXISTS) &&
+	   		FindFile(szTheBatDir,"thebat.exe",svResult)=0) then
+			bFoundTheBat = TRUE;
+		else
+			//They did not enter a path for ICQ
+			// & it cannot be found so we do not install the plugin.
+			MessageBox( "There does not appear to be a valid install of ICQ\n" +
+			"in this directory so the plugin won't be installed.", INFORMATION );
+			ComponentSelectItem(MEDIA,"theBatPlugin",FALSE);
+			return FALSE;
+		endif;
+	endif;
+	
+	if (bFoundTheBat = TRUE) then
+	ComponentSetTarget (MEDIA,"<theBatInstallDir>", szTheBatDir);
+	endif;
+end;
+//END FIND THEBAT
+
+
+function FindICQ()
+    NUMBER nvType, nvSize, nResult, nHandle, nSize;
+    LONG lSize, lData;
+    STRING szKey, szName, svValue, svResult, szFileName;
+    STRING szVersionInfo1, szVersionInfo2, szData;
+    STRING szResultBuffer;
+    BOOL bICQ, bVerInfo, bVerValue, bCheckVersion;
+    HWND hwndIS, RenameOriginal;
+    POINTER ptr1,ptr2;
+	
+begin
+	//Get Outlook Express's Install Directory
+	RegDBSetDefaultRoot(HKEY_CURRENT_USER);
+	szKey = "\\Software\\Mirabilis\\ICQ\\DefaultPrefs";
+	szName = "ICQPath";
+	RegDBGetKeyValueEx (szKey, szName, nvType, svValue, nvSize);
+	szICQdir = svValue;
+	
+	if (FindFile (szICQdir, "ICQ.exe", svResult) <0) then
+		bFoundICQ = FALSE;
+	else
+		//ICQ.exe is present
+		bFoundICQ = TRUE;
+	endif;
+	
+	if (bFoundICQ = FALSE) then
+		// we must ask the user where ICQ is
+		szOEdir = "";
+		nResult = UseDLL (SUPPORTDIR ^ "INSTALL.DLL");
+		szOEdir = "Setup could not find your ICQ Install folder. " +
+		"Please browse to it.";
+		hwndIS = GetWindowHandle(HWND_INSTALL);
+		nResult = MyBrowseForFolder32 (hwndIS, szICQdir);
+		UnUseDLL (SUPPORTDIR ^ "INSTALL.DLL");
+		
+		if (nResult = 0)then
+			//user canceled dialog
+			ComponentSelectItem
+			(MEDIA,"ICQ Plugin",FALSE);
+			return FALSE;
+		endif;
+		
+		if ((ExistsDir (szICQdir) = EXISTS) &&
+	   		FindFile(szOEdir,"ICQ.exe",svResult)=0) then
+			bFoundICQ = TRUE;
+		else
+			//They did not enter a path for ICQ
+			// & it cannot be found so we do not install the plugin.
+			MessageBox( "There does not appear to be a valid install of ICQ\n" +
+			"in this directory so the plugin won't be installed.", INFORMATION );
+			ComponentSelectItem(MEDIA,"ICQ Plugin",FALSE);
+			return FALSE;
+		endif;
+	endif;
+	
+	if (bFoundICQ = TRUE) then
+	ComponentSetTarget (MEDIA,"<ICQInstallDir>", szICQdir);
+	endif;
+end;
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Function: FindAllPluginApps
+//
+//  Purpose: This function finds all plugins apps. and turn their selections
+//           on/off accordingly
+//
+///////////////////////////////////////////////////////////////////////////////
+function FindAllPluginApps()
+	STRING RegString;
+	STRING KeyVal;
+	STRING svValue;
+	STRING svResult;
+	STRING szDelimiterSet;
+	STRING svString;
+	NUMBER nvPathLen;
+	NUMBER nvType;
+	NUMBER nvSize;
+	LIST listID;
+	
+begin
+	// Default all to off
+	ComponentSelectItem(MEDIA,"Lotus Notes", FALSE);
+	ComponentSelectItem (MEDIA,"Outlook Exp Plugin", FALSE);
+	ComponentSelectItem	(MEDIA, "Eudora Plugin", FALSE);
+ 	ComponentSelectItem(MEDIA,"Exch Plugin", FALSE);
+	ComponentSelectItem(MEDIA,"Groupwise", FALSE);
+	ComponentSelectItem(MEDIA,"ICQ Plugin",FALSE);  
+	ComponentSelectItem(MEDIA,"theBatPlugin",FALSE);  
+
+	//Begin the Bat!
+	RegDBSetDefaultRoot(HKEY_CURRENT_USER);
+	RegString = "\\Software\\RIT\\The Bat!";
+	KeyVal = "ProgramDir";
+	if (RegDBGetKeyValueEx (RegString, KeyVal, nvType, svValue, nvSize) = 0) then
+			ComponentSelectItem (MEDIA,"theBatPlugin", TRUE);
+	endif;
+	//End the Bat!
+
+	//Begin ICQ
+	RegDBSetDefaultRoot(HKEY_CURRENT_USER);
+	RegString = "\\Software\\Mirabilis\\ICQ\\DefaultPrefs";
+	KeyVal = "ICQPath";
+	if (RegDBGetKeyValueEx (RegString, KeyVal, nvType, svValue, nvSize) = 0) then
+			ComponentSelectItem (MEDIA,"ICQ Plugin", TRUE);
+	endif;
+	//End ICQ
+	
+	
+	//Begin Lotus Notes
+	if (INCLUDE_LOTUS = "TRUE") then
+		RegDBSetDefaultRoot(HKEY_LOCAL_MACHINE);
+		RegString = "SOFTWARE\\Lotus\\Notes\\4.0";
+		KeyVal = "Path";
+		if (RegDBGetKeyValueEx(RegString,KeyVal,nvType, svValue, nvSize) = 0) then
+			if ((ExistsDir(svValue) = EXISTS) &&
+			(Is(FILE_EXISTS,svValue ^ "nlnotes.exe") = TRUE)) then
+				ComponentSelectItem(MEDIA,"Lotus Notes", TRUE);
+			endif;	
+		endif;	
+	endif;	
+	//End Lotus Notes
+
+	//Begin Outlook Express
+	RegDBSetDefaultRoot(HKEY_LOCAL_MACHINE);
+	RegString = "SOFTWARE\\Microsoft\\Outlook Express";
+	KeyVal = "InstallRoot";
+	if (RegDBGetKeyValueEx (RegString, KeyVal, nvType, svValue, nvSize) = 0) then
+			ComponentSelectItem (MEDIA,"Outlook Exp Plugin", TRUE);
+	endif;
+	//End Outlook Express
+	
+	//Begin Eudora
+	RegDBSetDefaultRoot(HKEY_CURRENT_USER);
+	RegString = "Software\\Qualcomm\\Eudora\\CommandLine";
+	KeyVal = "Current";
+	if (RegDBGetKeyValueEx (RegString,KeyVal,nvType, svValue, nvSize) = 0) then
+		listID = ListCreate (STRINGLIST);
+		szDelimiterSet = " ";
+	
+		StrGetTokens(listID, svValue, szDelimiterSet);
+		ListGetFirstString(listID, svString);
+		ParsePath(svValue, svString, PATH);
+				
+		if (ExistsDir(svValue) = EXISTS) then
+			ComponentSelectItem	(MEDIA, "Eudora Plugin", TRUE);
+		endif;
+		ListDestroy (listID);
+	endif;
+	//End Eudora
+
+	//Begin Exchange
+	RegDBSetDefaultRoot(HKEY_LOCAL_MACHINE);
+	RegString = "SOFTWARE\\Microsoft\\Exchange";
+	if RegDBKeyExist (RegString) then
+		ComponentSelectItem(MEDIA,"Exch Plugin", TRUE);
+	endif;
+	//End Exchange	
+	
+	//Begin Groupwise
+	if (INCLUDE_GROUPWISE = "TRUE") then
+		RegDBSetDefaultRoot(HKEY_LOCAL_MACHINE);
+		RegString = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\GrpWise.exe";
+		if (RegDBKeyExist (RegString) = 1) then
+			ComponentSelectItem(MEDIA,"Groupwise", TRUE);
+		endif;
+	endif;
+	//End Groupwise	
+end;
+
+
+
+
