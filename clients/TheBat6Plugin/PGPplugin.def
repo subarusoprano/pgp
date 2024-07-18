@@ -1,0 +1,17 @@
+; PGPplugin.def : Declares the module parameters for the DLL.
+
+LIBRARY      "batpgp65.dll"
+
+EXPORTS
+        pgp60_init
+        pgp60_config
+        pgp60_launch_keys
+        pgp60_finish
+
+        pgp60_encode
+        pgp60_decode
+        pgp60_add_key
+        pgp60_free
+
+	pgp60_defsign
+	pgp60_defencrypt
