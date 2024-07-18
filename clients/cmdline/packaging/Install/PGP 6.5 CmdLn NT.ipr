@@ -1,0 +1,56 @@
+[Language]
+LanguageSupport0=0009
+
+[OperatingSystem]
+OSSupport=0000000000010000
+
+[Data]
+CurrentMedia=
+set_mifserial=
+ProductName=PGP Command Line 6.5.2 for NT
+CurrentComponentDef=Default.cdf
+set_dlldebug=No
+AppExe=E:\BUILDS\PGPcmdline60-NT-beta3a-100-old\clients\pgp\cmdline\cmdline\Release\PGP.exe
+DevEnvironment=Microsoft Visual C++
+FreshBits=FALSE
+set_mif=No
+set_testmode=No
+Instructions=Instructions.txt
+EmailAddresss=
+SummaryText=Public Key Cryptography
+Department=TNS
+Type=Generic Application
+Author=
+HomeURL=www.NAI.com
+InstallRoot=I:\pgp658ckt\clients\pgp\cmdline\packaging\Install
+UpdateURL=http://
+set_level=Level 3
+InstallationGUID=61502b13-d28d-11d2-b1f6-00a0c9db4505
+Version=6.5.2
+set_miffile=Status.mif
+set_args=
+set_maxerr=50
+Notes=Notes.txt
+CurrentFileGroupDef=Default.fdf
+set_dllcmdline=
+set_warnaserr=No
+Copyright=©1999 Networks Associates Technology Inc.
+set_preproc=
+Category=System Tool
+CurrentPlatform=
+set_compileb4build=Yes
+set_crc=Yes
+set_maxwarn=50
+Description=Description.txt
+CompanyName=Network Associates Technology Inc.
+CurrentLanguage=English
+
+[MediaInfo]
+
+[General]
+PassData=
+ReadOnly=N
+Type=INSTALLMAIN
+Version=1.20.000
+PassOn=N
+
